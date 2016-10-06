@@ -1,0 +1,113 @@
+<html>
+<head>
+  <title></title>
+  <meta charset="utf-8"/>
+  <style></style>
+</head>
+<body>
+  <h1> Run Ship! Run!</h1>
+  <div>
+    Some Text before
+    <canvas id='canvas'>
+    </canvas>
+    Some Text after
+  </div>
+  <div>
+    <canvas id='canvas2'>
+    </canvas>
+  </div>
+</body>
+
+<script type='text/javascript'>
+
+var POSITION=0;
+var SPEED=0.01;
+var DIRECTION=1;
+var COIN_SIZE=0.1;
+var N = 16;
+var POINTS=Array();
+
+function init(){
+
+  var cvs = document.getElementById('canvas');
+
+  cvs.addEventListener("click", function(event){
+    //if(SPEED==0){SPEED=0.01;}else{SPEED=0;};
+    DIRECTION=-DIRECTION;
+  });
+
+  for(var n=0;n<N;n++){
+    POINTS[n] = 1;
+  }
+
+  window.requestAnimationFrame(draw);
+}
+
+function draw(){
+  var cvs = document.getElementById('canvas');
+  var ctx = cvs.getContext('2d');
+
+  cvs.height=300;
+  cvs.width=300;
+
+  ctx.fillStyle = 'rgba(0,0,0,4)';
+  ctx.strokeStyle = 'rgba(0,255,100,1)';
+  ctx.lineWidth=3;
+
+  ctx.fillRect(0,0,cvs.height,cvs.width);
+
+  ctx.translate(cvs.width/2,cvs.height/2);
+
+  var date = new Date();
+
+  ctx.beginPath();
+  ctx.arc(0,0,100,0,2*Math.PI);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0,0,20,0,2*Math.PI);
+  ctx.fillStyle = 'rgba(255,0,0,1)';
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.lineWidth=10;
+  ctx.strokeStyle = 'rgba(255,255,0,1)';
+  for(var i=0;i<N;i++){
+    if(POINTS[i] == 1){
+      ctx.beginPath();
+      ctx.arc(0,0,110,((2*Math.PI)/N*(i-COIN_SIZE/2)),(2*Math.PI)/N*(i+COIN_SIZE/2));
+      ctx.stroke();
+    }
+  }
+
+
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(255,0,255,1)';
+  ctx.arc(0,0,110,POSITION-0.1,POSITION+0.1);
+  ctx.stroke();
+
+  POSITION=(POSITION+SPEED*(DIRECTION))%(2*Math.PI);
+
+  var matchedCoin =coin(POSITION);
+  console.log(POSITION, matchedCoin);
+
+
+
+  if(matchedCoin){
+    POINTS[matchedCoin]=0;
+  }
+
+  window.requestAnimationFrame(draw);
+
+}
+
+function coin(position){
+  var positionValue = (POSITION*N)/(2*Math.PI);
+  var nextCoin = DIRECTION == 1 ? Math.ceil(positionValue):Math.floor(positionValue);
+
+  return (N / nextCoin) -1 ;
+}
+
+init();
+
+</script>
+</html>
