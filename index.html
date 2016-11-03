@@ -4,8 +4,7 @@
   <meta charset="utf-8"/>
   <style></style>
 </head>
-<body>
-  <h1> Run Ship! Run!</h1>
+<body style="background-color:#AAA; margin:0;padding:0;">
   <div>
     <canvas id='canvas'></canvas>
   </div>
@@ -20,13 +19,30 @@
 // I have to give thanks to William Malone by the excelent tutorial at
 // http://www.williammalone.com/articles/create-html5-canvas-javascript-sprite-animation/
 
-var GAME_W = 500;
-var GAME_H = 500;
+var MIN_SIZE = Math.min(window.innerWidth,window.innerHeight);
+var GAME_W = MIN_SIZE;
+var GAME_H = MIN_SIZE;
 var IMG_DIR = "./img/";
 
-var coin;
-var CTX;
+var COINS = 32;
 
+var ship;
+var CTX;
+var coins=Array(COINS);
+var coinsState=Array(COINS);                                        
+var shipPosition=0;
+
+var animatedSprites=Array();
+var spreadW = GAME_W/2*0.8;
+var spreadH = GAME_H/2*0.8;   
+
+var steps=3600;
+var lenght=2*Math.PI;
+var speed=0.02;
+var direction=1;
+
+var lastIndex=-1;
+                
 function init(){
   var cvs = document.getElementById('canvas');
   CTX = cvs.getContext('2d');
@@ -35,10 +51,53 @@ function init(){
   cvs.width=GAME_W;
 
   var coinSprite = new Image();
+  var shipSprite = new Image();
   coinSprite.src = IMG_DIR + "coin-anim.png";
-  coinSprite.addEventListener("load",gameLoop);
+  shipSprite.src = IMG_DIR + "ship.png";
+  ship = sprite({context:CTX,x:0,y:0,width:64,height:64, image:shipSprite,numberOfFrames:1,ticksPerFrame:1,loop:0});
 
-  coin = sprite({context:CTX,x:0,y:0,width:25,height:25, image:coinSprite,numberOfFrames:24,ticksPerFrame:1,loop:1});
+
+
+
+
+  for(var i=0;i<COINS;i++){
+    var tmpCoin = sprite({context:CTX,x:0,y:0,width:25,height:25, image:coinSprite,numberOfFrames:24,ticksPerFrame:1,loop:1});
+
+    tmpCoin.setPosC(
+    		Math.cos((2*Math.PI)/COINS * i) * spreadW + spreadW + 50,
+    		Math.sin((2*Math.PI)/COINS * i) * spreadH + spreadH + 50
+    )
+    coins[i] = tmpCoin;
+    animatedSprites.push(tmpCoin);
+  }
+
+
+  animatedSprites.push(ship);
+  cvs.addEventListener('click',reverseDirection);
+
+
+
+
+  gameLoop();
+}
+
+
+function reverseDirection(){
+ direction*=-1;
+
+
+
+}
+
+
+function uiTick(){
+
+  CTX.fillRect(0,0,GAME_W,GAME_H);
+
+  animatedSprites.forEach(function(sprite){
+    sprite.update();
+    sprite.render();
+  })
 }
 
 
@@ -46,23 +105,69 @@ function init(){
 
 function gameLoop(){
 
-
-  window.requestAnimationFrame(gameLoop);
-
   CTX.clearRect(0,0,GAME_W,GAME_H);
 
   var t = new Date();
 
   var ts = t.getSeconds();
   var tm = t.getMilliseconds();
+                  
 
-  coin.x = 100+Math.cos(ts*5 + tm/200)*25;
-  coin.y = 100+Math.sin(ts*5 + tm/200)*25;
-  coin.update();
-  coin.render();
 
+  moveShip();
+
+
+
+  uiTick();
+  window.requestAnimationFrame(gameLoop);
 
 }
+
+function moveShip(){
+
+
+	shipPosition+=speed*direction;
+
+	if(shipPosition >= 2*Math.PI){
+		shipPosition = 0;
+	}
+
+	ship.setPosC(
+			Math.cos(shipPosition) * spreadW + spreadW + 50,
+			Math.sin(shipPosition) * spreadH + spreadH + 50
+	);
+
+	var coinIndex = positionToIndex(shipPosition,COINS);
+	console.log(coinIndex);
+
+	if(coinIndex != -1){
+		coinsState[coinIndex]=1;
+		coins[coinIndex].setPosC(0,0);
+	}
+
+
+
+}                  
+
+function positionToIndex(pos, indexes){
+
+	var absoluteValue = indexes/(2*Math.PI) * pos;
+	var index = Math.abs(Math.trunc(absoluteValue));
+	var round = absoluteValue.toFixed(2);
+
+	console.log(absoluteValue,index,round);
+
+	var yep = (round - index) <= 0.1;
+
+	if(yep){
+		return index;
+	}else{
+		return -1;
+	}
+
+}
+
+
 
 function sprite(options) {
 
@@ -79,6 +184,11 @@ function sprite(options) {
   that.loop = options.loop;
   that.x = options.x;
   that.y = options.y;
+
+  that.setPosC = function(x,y){
+  	that.x = x - that.width/2;
+  	that.y = y - that.height/2;
+	}
 
 
   that.render = function(){
